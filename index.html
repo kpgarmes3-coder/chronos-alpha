@@ -50,7 +50,8 @@
 
     <script>
         // ⚠️ คำเตือน: หากนำไปขึ้น Cloud แล้ว ให้เปลี่ยน URL นี้เป็น wss://ชื่อเว็บของคุณ.com/ws/apex
-        const ws = new WebSocket("ws://localhost:8000/ws/apex");
+        const ws = new WebSocket("wss://chronos-alpha.onrender.com/ws/apex");
+
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
