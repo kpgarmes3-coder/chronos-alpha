@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronos Alpha | Mobile Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white font-mono p-4">
+    
+    <div class="max-w-md mx-auto space-y-4">
+        <!-- Header -->
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
+            <h1 class="text-xl font-black text-cyan-400">CHRONOS ALPHA</h1>
+            <p class="text-xs text-gray-400">Omni-Channel Real-time Terminal</p>
+        </div>
+
+        <!-- AI Decision Box -->
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
+            <div class="text-xs text-gray-400">AI PROJECTION DIRECTION</div>
+            <div id="ai-direction" class="text-2xl font-black my-1 text-yellow-400">CONNECTING...</div>
+            <div class="text-xs">Confidence: <span id="ai-conf" class="font-bold">0%</span></div>
+        </div>
+
+        <!-- Prices & Imbalance -->
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 space-y-2">
+            <div class="text-sm text-gray-400">💰 Live Market Data</div>
+            <div class="text-2xl font-black text-cyan-400">BTC: $<span id="btc-price">0.00</span></div>
+            <div class="text-xs text-gray-300">Order Imbalance: <span id="imbalance" class="font-bold">0%</span></div>
+            <div class="text-xs text-gray-400 truncate">Whale Track: <span id="whale" class="text-yellow-300">None</span></div>
+        </div>
+
+        <!-- Macro F&G -->
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 flex justify-between items-center">
+            <div>
+                <div class="text-xs text-gray-400">Fear & Greed Index</div>
+                <div id="fng-status" class="text-sm font-bold uppercase">-</div>
+            </div>
+            <div id="fng-value" class="text-3xl font-black">0</div>
+        </div>
+
+        <!-- Reddit NLP Feed -->
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+            <h2 class="text-sm font-bold mb-3 border-b border-gray-700 pb-2">🔥 Reddit NLP Feed</h2>
+            <div id="reddit-feed" class="space-y-3 text-xs max-h-60 overflow-y-auto">
+                <!-- ข่าวจะแสดงที่นี่ -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ คำเตือน: หากนำไปขึ้น Cloud แล้ว ให้เปลี่ยน URL นี้เป็น wss://ชื่อเว็บของคุณ.com/ws/apex
+        const ws = new WebSocket("ws://localhost:8000/ws/apex");
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            // Prices
+            document.getElementById("btc-price").innerText = data.btc_price.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById("imbalance").innerText = data.order_imbalance + "%";
+            document.getElementById("whale").innerText = data.latest_whale;
+
+            // AI Direction
+            const dirEl = document.getElementById("ai-direction");
+            dirEl.innerText = data.ai_engine.direction;
+            dirEl.className = `text-2xl font-black my-1 ${data.ai_engine.direction.includes('BULL') ? 'text-green-400' : data.ai_engine.direction.includes('BEAR') ? 'text-red-400' : 'text-yellow-400'}`;
+            document.getElementById("ai-conf").innerText = data.ai_engine.confidence + "%";
+
+            // Macro
+            document.getElementById("fng-value").innerText = data.macro.fng_value;
+            document.getElementById("fng-status").innerText = data.macro.fng_status;
+
+            // Reddit Feed
+            const feed = document.getElementById("reddit-feed");
+            feed.innerHTML = "";
+            data.nlp_feed.forEach(post => {
+                const isBull = post.compound >= 0.05;
+                const isBear = post.compound <= -0.05;
+                feed.innerHTML = `
+                    <div class="p-2 bg-gray-900 rounded border-l-2 ${isBull ? 'border-green-500' : isBear ? 'border-red-500' : 'border-gray-500'}">
+                        <div class="font-bold text-gray-200">${post.title}</div>
+                        <div class="text-gray-400 mt-1 flex justify-between">
+                            <span>👍 ${post.upvotes}</span>
+                            <span class="${isBull ? 'text-green-400' : isBear ? 'text-red-400' : 'text-gray-400'}">${post.sentiment}</span>
+                        </div>
+                    </div>
+                ` + feed.innerHTML;
+            });
+        };
+    </script>
+</body>
+</html>
